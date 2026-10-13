@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MedMonitor — {{ ward|upper if ward=='icu' else 'Incubator' }} Department</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030d1a;--surface:#091525;--surface2:#0d1e35;
+  --border:#0d3050;--border2:#1a4060;
+  --cyan:#00e5ff;--cyan2:#00b4d8;
+  --green:#00e676;--amber:#ffd600;--red:#ff4444;
+  --text:#e0f4ff;--muted:#4a7a9b;--muted2:#2a5070;
+}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;
+  background-image:
+    radial-gradient(ellipse 700px 500px at 5% 20%,#001a3318,transparent),
+    radial-gradient(ellipse 500px 700px at 95% 80%,#003a5510,transparent);
+}
+
+/* ── Header ── */
+.header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:18px 32px;border-bottom:1px solid var(--border);
+  background:#030d1aee;backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:50;
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.logo-text{font-family:'Space Mono',monospace;font-size:12px;color:var(--cyan);letter-spacing:2px;}
+.back-btn{
+  padding:9px 20px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;
+  cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.back-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── Layout ── */
+.main-layout{
+  display:flex;flex:1;gap:0;overflow:hidden;
+}
+.patients-col{
+  flex:1;padding:28px 32px;overflow-y:auto;
+}
+.msg-col{
+  width:360px;min-width:320px;
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  background:var(--surface);
+}
+@media(max-width:900px){
+  .main-layout{flex-direction:column;}
+  .msg-col{width:100%;border-left:none;border-top:1px solid var(--border);max-height:400px;}
+}
+
+/* ── Patient Grid ── */
+.section-title{
+  font-family:'Space Mono',monospace;font-size:13px;color:var(--cyan);
+  letter-spacing:1px;margin-bottom:18px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:20px;
+}
+
+/* ── Card (same as main) ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:22px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan-c, #00e5ff),transparent);opacity:.4;
+}
+.card:hover{transform:translateY(-3px);}
+.card.normal {border-color:#1a4060;--cyan-c:#00e5ff;}
+.card.normal:hover{border-color:var(--cyan);box-shadow:0 8px 40px #00e5ff14;}
+.card.warning{border-color:#5a4200;--cyan-c:#ffd600;}
+.card.warning:hover{border-color:var(--amber);box-shadow:0 8px 40px #ffd60014;}
+.card.danger {border-color:#5a1a1a;--cyan-c:#ff4444;}
+.card.danger:hover{border-color:var(--red);box-shadow:0 8px 40px #ff444414;}
+
+.card-status-bar{height:3px;border-radius:2px;margin-bottom:16px;background:var(--border);}
+.card.normal  .card-status-bar{background:var(--cyan);}
+.card.warning .card-status-bar{background:var(--amber);}
+.card.danger  .card-status-bar{background:var(--red);box-shadow:0 0 10px var(--red);}
+
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.patient-name{font-size:16px;font-weight:600;margin-bottom:4px;}
+.patient-info{font-size:12px;color:var(--muted);line-height:1.7;}
+
+.badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;}
+.badge-status{display:inline-flex;align-items:center;}
+.badge-status.normal {background:#002a0e;color:var(--green);border:1px solid #003d14;}
+.badge-status.warning{background:#2a2000;color:var(--amber);border:1px solid #3d2f00;}
+.badge-status.danger {background:#2a0505;color:var(--red);border:1px solid #4a0a0a;}
+
+.vitals{display:flex;gap:10px;margin-top:16px;}
+.vital{
+  flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:10px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;
+}
+.vital-label{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:.5px;}
+.vital-val{font-size:18px;font-weight:700;font-family:'Space Mono',monospace;}
+.vital-unit{font-size:9px;color:var(--muted);}
+.v-pulse{color:var(--red);}
+.v-spo2 {color:var(--cyan);}
+.v-temp {color:var(--amber);}
+.v-weight{color:var(--green);}
+
+.secondaries{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.sec{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:5px 10px;font-size:11px;color:var(--text);
+}
+.sec-icon{font-size:12px;}
+.sec-val{font-family:'Space Mono',monospace;font-size:11px;color:var(--text);}
+.ecg-off{
+  display:flex;align-items:center;gap:5px;
+  background:#2a0505;border:1px solid #4a1515;border-radius:8px;
+  padding:5px 10px;font-size:11px;color:var(--red);
+}
+
+.empty{grid-column:1/-1;text-align:center;padding:80px 0;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.4;}
+.empty-text{font-size:15px;}
+
+/* ── Messaging Sidebar ── */
+.msg-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  font-family:'Space Mono',monospace;font-size:13px;color:var(--cyan);
+  letter-spacing:1px;
+}
+.msg-thread{
+  flex:1;overflow-y:auto;
+  display:flex;flex-direction:column;gap:8px;
+  padding:16px;
+}
+.msg-bubble{
+  max-width:85%;padding:10px 14px;border-radius:12px;
+  font-size:13px;line-height:1.5;word-break:break-word;
+}
+.msg-bubble.sent{
+  align-self:flex-end;
+  background:#0a2a40;border:1px solid var(--cyan2);color:var(--text);
+}
+.msg-bubble.received{
+  align-self:flex-start;
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+}
+.msg-meta{font-size:10px;color:var(--muted);margin-top:4px;}
+.msg-sender{font-weight:600;color:var(--cyan);font-size:11px;}
+.msg-compose{
+  display:flex;gap:8px;
+  padding:14px 16px;border-top:1px solid var(--border);
+}
+.msg-input{
+  flex:1;padding:10px 14px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .2s;
+}
+.msg-input:focus{border-color:var(--cyan);}
+.msg-send-btn{
+  padding:10px 18px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  color:#030d1a;border:none;border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:opacity .2s;
+}
+.msg-send-btn:hover{opacity:.85}
+.msg-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">{{ '🏥' if ward=='icu' else '🍼' }}</div>
+    <span class="logo-text">{{ 'ICU' if ward=='icu' else 'INCUBATOR' }} DEPARTMENT</span>
+  </div>
+  <a class="back-btn" href="/">← Main Center</a>
+</div>
+
+<div class="main-layout">
+  <!-- Patient cards column -->
+  <div class="patients-col">
+    <div class="section-title">📊 {{ 'ICU' if ward=='icu' else 'INCUBATOR' }} PATIENTS</div>
+    <div class="grid" id="patient-grid"></div>
+  </div>
+
+  <!-- Messaging sidebar -->
+  <div class="msg-col">
+    <div class="msg-header">💬 MESSAGES — MAIN CENTER</div>
+    <div class="msg-thread" id="msg-thread"></div>
+    <div class="msg-compose">
+      <input class="msg-input" id="msg-input" placeholder="Message to Main Center..."
+             onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="msg-send-btn" onclick="sendMsg()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WARD = '{{ ward }}';
+const WARD_LABEL = WARD === 'icu' ? 'ICU' : 'Incubator';
+
+// ── Status helpers ──
+function getStatus(s){
+  const isNeo  = WARD==='incubator';
+  const pulseHi = isNeo ? 180 : 110;
+  const pulseWn = isNeo ? 165 : 100;
+
+  if(s.spo2===0)
+    return {cls:'warning',dot:'🟡',label:'Sensor Error'};
+  if(s.pulse>pulseHi || s.spo2<88 || s.temp_body>39.5 || s.air_quality>80)
+    return {cls:'danger' ,dot:'🔴',label:'Critical'};
+  if(s.pulse>pulseWn || s.spo2<93 || s.temp_body>37.8 || s.air_quality>55)
+    return {cls:'warning',dot:'🟡',label:'Warning'};
+  return   {cls:'normal' ,dot:'🟢',label:'Stable'};
+}
+
+function buildCard(id, p){
+  const s  = p.sensor;
+  const st = getStatus(s);
+
+  const ecgTag = s.ecg_lead_off
+    ? `<span class="ecg-off">⚡ Lead OFF</span>`
+    : `<span class="sec"><span class="sec-icon">⚡</span><span class="sec-val">${s.ecg}</span></span>`;
+
+  const div = document.createElement('div');
+  div.className = 'card ' + st.cls;
+  div.onclick = () => window.location.href='/dashboard/'+id;
+  div.innerHTML = `
+    <div class="card-status-bar"></div>
+    <div class="card-head">
+      <div>
+        <div class="patient-name">${p.info.name}</div>
+        <div class="patient-info">
+          Age ${p.info.age} &nbsp;·&nbsp; ${p.info.admission_date}<br>
+          ${p.info.condition}
+        </div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge badge-status ${st.cls}">${st.dot} ${st.label}</span>
+    </div>
+    <div class="vitals">
+      <div class="vital">
+        <span class="vital-label">PULSE</span>
+        <span class="vital-val v-pulse">${s.pulse}</span>
+        <span class="vital-unit">BPM</span>
+      </div>
+      <div class="vital">
+        <span class="vital-label">SpO₂</span>
+        <span class="vital-val v-spo2">${s.spo2}</span>
+        <span class="vital-unit">%</span>
+      </div>
+      <div class="vital">
+        <span class="vital-label">BODY T</span>
+        <span class="vital-val v-temp">${Number(s.temp_body).toFixed(1)}</span>
+        <span class="vital-unit">°C</span>
+      </div>
+      ${WARD==='incubator' ? `<div class="vital">
+        <span class="vital-label">WEIGHT</span>
+        <span class="vital-val v-weight">${Number(s.weight).toFixed(2)}</span>
+        <span class="vital-unit">kg</span>
+      </div>` : ''}
+    </div>
+    <div class="secondaries">
+      ${ecgTag}
+      <span class="sec"><span class="sec-icon">💨</span><span class="sec-val">${s.air_quality}%</span></span>
+      <span class="sec"><span class="sec-icon">🔊</span><span class="sec-val">${s.sound}%</span></span>
+      <span class="sec"><span class="sec-icon">🌡️</span><span class="sec-val">${Number(s.temp_dht).toFixed(1)}°C</span></span>
+      <span class="sec"><span class="sec-icon">💧</span><span class="sec-val">${Number(s.humidity).toFixed(0)}%</span></span>
+    </div>`;
+  return div;
+}
+
+async function loadPatients(){
+  try{
+    const res  = await fetch('/ward_data/'+WARD);
+    const data = await res.json();
+    const grid = document.getElementById('patient-grid');
+    const scrollY = grid.scrollTop;
+    grid.innerHTML = '';
+
+    const keys = Object.keys(data);
+    if(!keys.length){
+      grid.innerHTML = `<div class="empty">
+        <div class="empty-icon">${WARD==='icu'?'🏥':'🍼'}</div>
+        <div class="empty-text">No ${WARD_LABEL} patients yet</div>
+      </div>`;
+      return;
+    }
+    keys.forEach(id => grid.appendChild(buildCard(id, data[id])));
+    grid.scrollTop = scrollY;
+  }catch(e){console.error(e);}
+}
+
+// ── Messaging ──
+async function sendMsg(){
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  await fetch('/send_message', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({sender:WARD, receiver:'main', message:text})
+  });
+  loadMessages();
+}
+
+async function loadMessages(){
+  try{
+    const res = await fetch('/get_messages/'+WARD);
+    const msgs = await res.json();
+    const thread = document.getElementById('msg-thread');
+    if(!msgs.length){
+      thread.innerHTML = '<div class="msg-empty">No messages yet</div>';
+      return;
+    }
+    thread.innerHTML = msgs.map(m => {
+      const isSent = m.sender === WARD;
+      const senderLabel = isSent ? WARD_LABEL : 'Main Center';
+      const time = m.timestamp ? m.timestamp.split(' ')[1] || m.timestamp : '';
+      return `<div class="msg-bubble ${isSent?'sent':'received'}">
+        <div class="msg-sender">${senderLabel}</div>
+        ${m.message}
+        <div class="msg-meta">${time}</div>
+      </div>`;
+    }).join('');
+    thread.scrollTop = thread.scrollHeight;
+  }catch(e){console.error(e);}
+}
+
+setInterval(loadPatients, 2000);
+setInterval(loadMessages, 3000);
+loadPatients();
+loadMessages();
+</script>
+</body>
+</html>

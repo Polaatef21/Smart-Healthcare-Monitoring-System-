@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Patient Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030d1a;--surface:#091525;--surface2:#0d1e35;
+  --border:#0d3050;--border2:#1a4060;
+  --cyan:#00e5ff;--cyan2:#00b4d8;
+  --green:#00e676;--amber:#ffd600;--red:#ff4444;--purple:#c084fc;
+  --text:#e0f4ff;--muted:#4a7a9b;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 800px 500px at 10% 0%,#001a3314,transparent),
+    radial-gradient(ellipse 600px 800px at 90% 100%,#003a5510,transparent);
+}
+
+/* ── Header ── */
+.header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 32px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:50;
+  background:#030d1af0;backdrop-filter:blur(12px);
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  display:flex;align-items:center;justify-content:center;font-size:15px;}
+.logo-text{font-family:'Space Mono',monospace;font-size:11px;color:var(--cyan);letter-spacing:2px;}
+.header-btns{display:flex;gap:10px;}
+.btn{
+  padding:8px 18px;border-radius:9px;text-decoration:none;
+  font-size:13px;font-weight:600;cursor:pointer;border:none;
+  font-family:'DM Sans',sans-serif;transition:opacity .2s;
+}
+.btn-outline{background:var(--surface);border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#030d1a;}
+.btn-primary:hover{opacity:.85}
+
+/* ── Main layout ── */
+.main{display:grid;grid-template-columns:280px 1fr;gap:24px;padding:24px 32px;}
+
+/* ── Patient card ── */
+.patient-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:24px;height:fit-content;position:sticky;top:80px;
+}
+.patient-avatar{
+  width:56px;height:56px;border-radius:14px;
+  background:linear-gradient(135deg,var(--cyan2)30,var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;margin-bottom:14px;
+}
+.patient-name{font-size:18px;font-weight:600;margin-bottom:4px;}
+.patient-info{font-size:12px;color:var(--muted);line-height:1.9;}
+.patient-info strong{color:var(--text);}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+
+.status-box{
+  display:flex;align-items:center;gap:10px;
+  padding:12px;border-radius:10px;margin-top:0;
+  border:1px solid;
+}
+.status-box.normal {background:#002a0e20;border-color:#003d1440;color:var(--green);}
+.status-box.warning{background:#2a200020;border-color:#3d2f0040;color:var(--amber);}
+.status-box.danger {background:#2a050520;border-color:#4a0a0a40;color:var(--red);}
+.status-dot{font-size:20px;}
+.status-label{font-size:13px;font-weight:600;}
+.status-sub{font-size:11px;opacity:.7;}
+
+.badge-ward{
+  display:inline-block;
+  margin-top:12px;
+  padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;
+  background:#0d2a40;color:var(--cyan);border:1px solid #1a4060;
+}
+
+/* ── Right section ── */
+.right-col{display:flex;flex-direction:column;gap:24px;}
+
+/* ── Section header ── */
+.section-title{
+  font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:2px;color:var(--muted);
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;
+}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── Vitals circles grid ── */
+.vitals-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:12px;
+}
+.vital-circle{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  text-align:center;transition:transform .2s,border-color .2s;
+  cursor:default;
+}
+.vital-circle:hover{transform:translateY(-2px);}
+.vital-circle.normal :hover{border-color:var(--cyan);}
+.vc-icon{font-size:18px;margin-bottom:2px;}
+.vc-label{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:.5px;}
+.vc-val{font-size:22px;font-weight:700;font-family:'Space Mono',monospace;line-height:1;}
+.vc-unit{font-size:10px;color:var(--muted);}
+
+/* ECG lead off alert */
+.ecg-alert{
+  display:flex;align-items:center;gap:10px;
+  background:#2a050520;border:1px solid #4a1515;border-radius:10px;
+  padding:10px 14px;font-size:13px;color:var(--red);
+}
+
+/* ── Chart panels ── */
+.chart-panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:20px 20px 16px;
+}
+.chart-panel-title{
+  font-size:13px;font-weight:600;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;color:var(--text);
+}
+.chart-wrap{position:relative;height:200px;}
+
+/* ── Responsive ── */
+@media(max-width:800px){
+  .main{grid-template-columns:1fr;}
+  .patient-card{position:static;}
+  .header{padding:14px 16px;}
+  .main{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🏥</div>
+    <span class="logo-text">MED·MONITOR</span>
+  </div>
+  <div class="header-btns">
+    <a class="btn btn-outline" href="/">← Back</a>
+    <a class="btn btn-primary" href="/form">+ Add Patient</a>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Patient info sidebar -->
+  <aside>
+    <div class="patient-card">
+      <div class="patient-avatar">
+        {{ '🍼' if patient.ward=='incubator' else '👤' }}
+      </div>
+      <div class="patient-name">{{ patient.name }}</div>
+      <div class="patient-info">
+        <strong>Age:</strong> {{ patient.age }}<br>
+        <strong>Admitted:</strong> {{ patient.admission_date }}<br>
+        <strong>Diagnosis:</strong> {{ patient.condition }}
+      </div>
+
+      <span class="badge-ward">
+        {{ '🍼 Incubator' if patient.ward=='incubator' else '🏥 ICU' }}
+      </span>
+
+      <hr class="divider">
+
+      <div class="status-box" id="status-box">
+        <span class="status-dot">🟢</span>
+        <div>
+          <div class="status-label" id="status-label">Stable</div>
+          <div class="status-sub">Updating…</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right column -->
+  <div class="right-col">
+
+    <!-- Vital Circles -->
+    <div>
+      <div class="section-title">LIVE READINGS</div>
+      <div id="ecg-alert" style="display:none" class="ecg-alert">
+        ⚠️ ECG Lead Disconnected — check electrode placement
+      </div>
+      <div class="vitals-grid" id="vitals-grid">
+        <!-- Built by JS -->
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div>
+      <div class="section-title">ECG — HISTORY</div>
+      <div class="chart-panel">
+        <div class="chart-panel-title">⚡ ECG (Raw)</div>
+        <div class="chart-wrap"><canvas id="chart-ecg"></canvas></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">BODY TEMPERATURE — HISTORY</div>
+      <div class="chart-panel">
+        <div class="chart-panel-title">🌡️ Body Temperature (°C)</div>
+        <div class="chart-wrap"><canvas id="chart-temp"></canvas></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">SPO₂ — HISTORY</div>
+      <div class="chart-panel">
+        <div class="chart-panel-title">🩸 SpO₂ (%)</div>
+        <div class="chart-wrap"><canvas id="chart-spo2"></canvas></div>
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+</div><!-- /main -->
+
+<script>
+const PID  = "{{ pid }}";
+const WARD = "{{ patient.ward }}";
+const MAX_POINTS = 30;
+
+// ── History buffers ──────────────────────────────────────
+const labels  = [];
+const hist = {
+  pulse:[], spo2:[], temp_body:[], ecg:[],
+  air_quality:[], sound:[], temp_dht:[], humidity:[], weight:[]
+};
+
+// ── Chart defaults ────────────────────────────────────────
+Chart.defaults.color        = '#4a7a9b';
+Chart.defaults.borderColor  = '#0d3050';
+Chart.defaults.font.family  = "'DM Sans', sans-serif";
+
+function mkChart(id, datasets, yLabel, yExtra){
+  return new Chart(document.getElementById(id), {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:400 },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ position:'top', labels:{ boxWidth:12, padding:16, font:{size:11} } },
+        tooltip:{ backgroundColor:'#091525', borderColor:'#0d3050', borderWidth:1,
+          callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}` } }
+      },
+      scales:{
+        x:{ grid:{ color:'#0d305040' }, ticks:{ maxTicksLimit:8, font:{size:10} } },
+        y:{ grid:{ color:'#0d305040' }, title:{ display:!!yLabel, text:yLabel },
+            ticks:{ font:{size:10} }, ...(yExtra||{}) }
+      }
+    }
+  });
+}
+
+const ds = (label, color, data) => ({
+  label, data,
+  borderColor:color, backgroundColor:color+'18',
+  borderWidth:2, pointRadius:2, pointHoverRadius:5,
+  fill:true, tension:.35
+});
+
+const cEcg  = mkChart('chart-ecg',  [ ds('ECG (raw)', '#a78bfa', hist.ecg)  ], 'Raw');
+const cTemp = mkChart('chart-temp', [ ds('Body Temp (°C)', '#ffd600', hist.temp_body) ], '°C', { min:35, max:42 });
+const cSpo2 = mkChart('chart-spo2', [ ds('SpO₂ (%)', '#00e5ff', hist.spo2) ], '%');
+
+// ── Vital circle definitions ──────────────────────────────
+const CIRCLES = [
+  { key:'pulse',      icon:'❤️',  label:'PULSE',    unit:'BPM',  color:'#ff4444' },
+  { key:'spo2',       icon:'🩸',  label:'SpO₂',     unit:'%',    color:'#00e5ff' },
+  { key:'temp_body',  icon:'🌡️', label:'BODY TEMP', unit:'°C',   color:'#ffd600' },
+  { key:'ecg',        icon:'⚡',  label:'ECG',       unit:'raw',  color:'#a78bfa' },
+  { key:'air_quality',icon:'💨',  label:'AIR QUAL', unit:'/100', color:'#00b4d8' },
+  { key:'sound',      icon:'🔊',  label:'SOUND',    unit:'/100', color:'#ff9800' },
+  { key:'temp_dht',   icon:'🌡️', label:'ROOM TEMP', unit:'°C',   color:'#c084fc' },
+  { key:'humidity',   icon:'💧',  label:'HUMIDITY',  unit:'%',    color:'#67e8f9' },
+];
+if(WARD==='incubator'){
+  CIRCLES.push({ key:'weight', icon:'⚖️', label:'WEIGHT', unit:'kg', color:'#00e676' });
+}
+
+function buildCircles(data){
+  const grid = document.getElementById('vitals-grid');
+  grid.innerHTML='';
+  CIRCLES.forEach(c=>{
+    let val = data[c.key];
+    if(val===undefined) return;
+    if(typeof val==='number'){
+      val = (val%1===0) ? val : Number(val).toFixed(c.key==='weight'?2:1);
+    }
+    const div=document.createElement('div');
+    div.className='vital-circle';
+    div.innerHTML=`
+      <span class="vc-icon">${c.icon}</span>
+      <span class="vc-label">${c.label}</span>
+      <span class="vc-val" style="color:${c.color}">${val}</span>
+      <span class="vc-unit">${c.unit}</span>`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Status logic ──────────────────────────────────────────
+function getStatus(s){
+  const isNeo = WARD==='incubator';
+  const pulseHi = isNeo ? 180 : 110;
+  const pulseWn = isNeo ? 165 : 100;
+  if(s.spo2===0)
+    return {cls:'warning', dot:'🟡', label:'Sensor Error', sub:'SpO2 not reading — check probe'};
+  if(s.pulse>pulseHi||s.spo2<88||s.temp_body>39.5||s.air_quality>80)
+    return {cls:'danger', dot:'🔴', label:'Critical', sub:'Immediate attention required'};
+  if(s.pulse>pulseWn||s.spo2<93||s.temp_body>37.8||s.air_quality>55)
+    return {cls:'warning', dot:'🟡', label:'Warning', sub:'Monitor closely'};
+  return {cls:'normal', dot:'🟢', label:'Stable', sub:'All readings normal'};
+}
+
+// ── Main fetch + update ───────────────────────────────────
+async function fetchData(){
+  try{
+    const res  = await fetch('/data/'+PID);
+    const data = await res.json();
+    if(data.error) return;
+
+    // Update circles
+    buildCircles(data);
+
+    // ECG alert
+    document.getElementById('ecg-alert').style.display =
+      data.ecg_lead_off ? 'flex' : 'none';
+
+    // Status
+    const st = getStatus(data);
+    const box = document.getElementById('status-box');
+    box.className = 'status-box ' + st.cls;
+    box.querySelector('.status-dot').textContent  = st.dot;
+    box.querySelector('.status-label').textContent = st.label;
+    box.querySelector('.status-sub').textContent   = st.sub;
+
+    // History
+    const t = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    labels.push(t);
+    Object.keys(hist).forEach(k=>{ if(data[k]!==undefined) hist[k].push(data[k]); });
+    if(labels.length>MAX_POINTS){
+      labels.shift();
+      Object.values(hist).forEach(a=>{ if(a.length>MAX_POINTS) a.shift(); });
+    }
+
+    cEcg.update('none');
+    cTemp.update('none');
+    cSpo2.update('none');
+
+  }catch(e){ console.error(e); }
+}
+
+setInterval(fetchData, 2000);
+fetchData();
+</script>
+</body>
+</html>
